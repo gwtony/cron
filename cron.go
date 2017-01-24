@@ -69,6 +69,10 @@ type FuncJob func(m *JobMeta)
 
 func (f FuncJob) Run(m *JobMeta) { f(m) }
 
+func (c *Cron) DeleteFunc(jobid string) {
+	c.DeleteJob(jobid)
+}
+
 func (c *Cron) DeleteJob(jobid string) {
 	var entry *Entry
 
