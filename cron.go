@@ -194,7 +194,7 @@ func (c *Cron) run() {
 			if entry.Op == 0 { //add
 				meta = entry.Meta
 				c.entries[meta.Id] = entry
-				c.jtree.RbtreeInsert(node)
+				c.jtree.RbtreeInsert(entry.Node)
 			} else if entry.Op == 1 { //delete
 				jobid := entry.Meta.Id
 				if entry = c.entries[jobid]; entry != nil {
