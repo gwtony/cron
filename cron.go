@@ -22,7 +22,7 @@ type Cron struct {
 }
 
 type Job interface {
-	Run(*JobMeta)
+	Run(*JobMeta, time.Time)
 }
 
 // The Schedule describes a job's duty cycle.
@@ -65,9 +65,9 @@ func New() *Cron {
 }
 
 // A wrapper that turns a func() into a cron.Job
-type FuncJob func(m *JobMeta)
+type FuncJob func(m *JobMeta, next time.Time)
 
-func (f FuncJob) Run(m *JobMeta) { f(m) }
+func (f FuncJob) Run(m *JobMeta, next time.Time) { f(m, next) }
 
 func (c *Cron) DeleteFunc(jobid string) {
 	c.DeleteJob(jobid)
@@ -91,7 +91,7 @@ func (c *Cron) DeleteJob(jobid string) {
 	}
 }
 
-func (c *Cron) AddFunc(spec string, meta *JobMeta, cmd func(*JobMeta)) error {
+func (c *Cron) AddFunc(spec string, meta *JobMeta, cmd func(*JobMeta, time.Time)) error {
 	return c.AddJob(spec, meta, FuncJob(cmd))
 }
 
@@ -133,7 +133,7 @@ func (c *Cron) Start() {
 	go c.run()
 }
 
-func (c *Cron) runWithRecovery(meta *JobMeta, j Job) {
+func (c *Cron) runWithRecovery(meta *JobMeta, j Job, next time.Time) {
 	defer func() {
 		if r := recover(); r != nil {
 			const size = 64 << 10
@@ -142,7 +142,7 @@ func (c *Cron) runWithRecovery(meta *JobMeta, j Job) {
 			fmt.Printf("cron: panic running job: %v\n%s\n", r, buf)
 		}
 	}()
-	j.Run(meta)
+	j.Run(meta, next)
 }
 
 func (c *Cron) run() {
@@ -179,10 +179,12 @@ func (c *Cron) run() {
 				if entry.Next.Before(now) {
 					c.jtree.RbtreeDelete(node)
 
-					go c.runWithRecovery(entry.Meta, entry.Job)
+					next := entry.Schedule.Next(now)
+					go c.runWithRecovery(entry.Meta, entry.Job, next)
 
 					entry.Prev = entry.Next
-					entry.Next = entry.Schedule.Next(now)
+					//entry.Next = entry.Schedule.Next(now)
+					entry.Next = next
 
 					c.jtree.RbtreeInsert(node)
 				} else {
