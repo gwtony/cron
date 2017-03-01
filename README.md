@@ -1,5 +1,5 @@
 [EXAMPLE]
-
+```
 package main
 
 import (
@@ -40,3 +40,4 @@ func main() {
 	c.Stop()  // Stop the scheduler (does not stop any jobs already running).
 
 }
+```
